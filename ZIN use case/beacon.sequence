@@ -1,0 +1,26 @@
+title Personal Data Beacon
+
+actor "Alice and her \nPersonal Health Record" as Alice
+participant DataStation
+participant IdentityProvider
+participant DataStationIndex
+
+note over DataStationIndex: Pre-condition: The dataprovider of the DataPoint is \ngranted access to the network. 
+Alice->IdentityProvider: Log in
+Alice<--IdentityProvider: Token of identity
+box right of Alice: Alice needs to give consent to the question asked and \nshe can choose which type of data (DataStations) or \nother criteria she is looking for.
+
+Alice->DataStationIndex: Query for DataProvider's and DataStation's
+
+loop for the result of the selection of DataStation's
+Alice->DataStation: ping "who has data on me?" to beacon service
+note over DataStation: A token provided by the IdentityProvider is attached to the ping
+DataStation->IdentityProvider: Get Alice's identification number (BSN in the Netherlands)
+DataStation->DataStation: Query for Alice
+DataStation-->Alice: result: Yes or No
+end
+box right of Alice: Alice is able to filter the result of the ping. She  \nneeds to give consent for creating a connection with \nthe DataPoint
+
+loop for the DataStation's found
+Alice->DataStation: Connect with DataStation
+end
