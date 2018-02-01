@@ -1,0 +1,16 @@
+title Personal Health Train
+
+Questioner->DataStation: Authenticate\nAccess the datastation environment
+box over DataStation: The Questioner needs to have access rights to deploy and start driving a train using a token from an Identity Provider. \nThe token needs to be checked with the IdentityProvider
+Questioner->DataStation: Deploy train
+DataStation->PersonalHealthTrainDepot: Pull train to station
+Questioner->DataStation: Start train
+Questioner->>QuestionerTrain: Drive train to destination (start task)
+QuestionerTrain->DataPoint: Query dataset
+QuestionerTrain->QuestionerTrain: Process data
+note over DataPoint:The DataPoint needs to be able to define datasets on top of tables and views\nand authorize a Questioner to a dataset.
+Questioner<<--QuestionerTrain: Arrived at destination Notification
+note over QuestionerTrain: Any Train can also be a Questioner to other DataStations
+Questioner->QuestionerTrain: Get results
+Questioner->DataStation: Stop train
+Questioner->DataStation: Remove train
