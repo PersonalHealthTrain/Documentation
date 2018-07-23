@@ -2,6 +2,13 @@
 
 This is the documentation of the Personal Health Train.
 
+## Architecture diagram
+- [PHT.archimate](PHT.archimate) is the current view on the architecture, available online at [personalhealthtrain.github.io](https://personalhealthtrain.github.io/Documentation/).
+- [PHT-original.archimate](PHT-original.archimate) is the collection of original PHT architecture diagrams, as discussed during the technical meeting in Leiden in April 2018.
+
+## Live view of the architecture
+The latest export of the architecture diagram is available at [personalhealthtrain.github.io](https://personalhealthtrain.github.io/Documentation/).
+
 ## General Information
 
 - [PHT Tech Google Group](https://groups.google.com/a/go-fair.org/forum/#!forum/pht-tech)
