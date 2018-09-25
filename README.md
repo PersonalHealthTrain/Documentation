@@ -32,8 +32,7 @@ This section describes all the repositories that are prefixed with `lib-`. as
 these comprise all the components of the library.
 
 ### Overview
-
-*TODO* Link image here
+![PHT Library](https://github.com/PersonalHealthTrain/Documentation/blob/master/figures/lib.png?raw=true "PHT Library")
 
 Each node in this image describes one Git repository.
 With the version dependencies.
