@@ -1,0 +1,36 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "title": "The Root Schema",
+  "required": [
+    "unmet"
+  ],
+  "properties": {
+    "message": {
+      "$id": "#/properties/message",
+      "type": "string",
+      "title": "The Message Schema",
+      "default": "",
+      "pattern": "^(.*)$"
+    },
+    "unmet": {
+      "$id": "#/properties/unmet",
+      "type": "array",
+      "title": "The Unmet Schema",
+      "items": {
+        "$id": "#/properties/unmet/items",
+        "type": "string",
+        "title": "The Items Schema",
+        "default": "",
+        "examples": [
+          "PHT_REQ1",
+          "PHT_REQ2"
+        ],
+        "pattern": "^(.*)$"
+      }
+    }
+  }
+}
+
