@@ -80,25 +80,36 @@ The following sections describe how to set up all necessary components to run th
 These installation steps have been performed and tested on a fresh Ubuntu 18.04.
 Obviously, the stations and the registry are able to run on separate systems.
 
-### The registry / Portus
-
-This [git repository](https://github.com/PersonalHealthTrain/Portus) contains the source code of the Portus-Project, adapted to the
-needs of the Personal Health Train Registry.
-
-#### Prerequisites
+### Prerequisites
+As Portus and the station are dockerized applications, the host machine that wants to run either one needs
+to have the Docker client as well as Docker Compose installed
 
 - Install Docker Community Edition (CE): <https://docs.docker.com/install/linux/docker-ce/ubuntu/>
 - Install Docker Compose to launch multiple containers at once: <https://docs.docker.com/compose/install/>
 
+Note that you might want to add your user to the `docker` group such that invoking docker commands as superuser
+is no longer required. On a Unix system, you can do this via:
+```shell
+sudo usermod -aG docker <username>
+```
+You need to logout and login for the changes to take effect.
+
+### The registry / Portus
+
+This [git repository](https://github.com/PersonalHealthTrain/Portus) contains the source code of the Portus-Project, adapted to the needs of the Personal Health Train Registry. Portus is where the trains are stored as Docker images.
+Docker Compose is used for starting Portus. Note that you have to use the `feature/station_support` branch,
+since the `master` branch is kept in sync with [upstream Portus](https://github.com/SUSE/Portus.git).
+
 #### Setup
 
 ```shell
-git clone https://github.com/PersonalHealthTrain/Portus
+git clone -b feature/station_support https://github.com/PersonalHealthTrain/Portus
 cd Portus
-git checkout feature/station_support
-nano .env # Edit MACHINE_FQDN to match your IP
-sudo docker-compose up # Takes a while to pull/build all containers & launch
+nano .env  # Edit MACHINE_FQDN to match your IP
+docker-compose up # Takes a while to pull/build all containers & launch
 ```
+It is important to set `MACHINE_FQDN` to an actual IP address and not `localhost`, otherwise Portus
+does not seem to be able to find your Docker registry.
 
 - You can now access the Portus-Webinterface under <http://yourMachineIp:3000>, where you'll be prompted to generate an admin account.
 - Afterwards, the interface asks for the location of the registry. The docker registry is a separate container and 
@@ -106,8 +117,7 @@ sudo docker-compose up # Takes a while to pull/build all containers & launch
   - *Name*: DefaultRegistry
   - *Hostname*: <yourMachineIp:5000>
   - The *Create*-Button will become active after the connection check in the background was successful. Click it
-- In the menu bar on the left, you should see an entry *Stations*. If not, you have launched the wrong branch of Portus, make sure  
-  you checked out the correct branch (*feature/station_support*)
+- In the menu bar on the left, you should see an entry *Stations*. If not, you have launched the wrong branch of Portus, make sure you checked out the correct branch (*feature/station_support*)
 - Under the menu *Users* create a user for each station
   - Leave the field *bot* unticked
   - You can provide any email address, currently it isn't used anywhere
@@ -116,18 +126,77 @@ sudo docker-compose up # Takes a while to pull/build all containers & launch
   - Select the newly created team by clicking on the name
   - Under *Members* add the station users to the team as ~~*Contributor*s~~ *Owner* (Currently there's a bug in the registry, only allowing
     owners to see all available repositories)
-- In the menu on the left navigate to *Namespaces* and create a namespace for the trains (e.g. *trains*). Provide the team you created
-  a couple steps above as *owner*
+- In the menu on the left navigate to *Namespaces* and create a namespace for the trains (e.g. *trains*). Provide the team you created a couple steps above as *owner*
 
-### The station
+### The station (Docker image, recommended)
 
-This [git repository](https://github.com/PersonalHealthTrain/station) contains the source code for a simple Station, a docker client
-configured to check the registry for new Trains/Docker Images, pulling & executing them.
+The station is available as Docker image from [Docker Hub](https://hub.docker.com/r/personalhealthtrain/station/).
+It is recommended to be executed with Docker Compose. 
 
-#### Using the binary
+Each existing station is identified with an integer identifier. So now you have to decide for one number.
+The following instructions assume that you deploy station 0.
 
-- **TODO** Test & Describe usage of environment parameters to overwrite *application.yml*
-- **TODO** Describe use of binary. For now use self-built version
+#### Docker Compose
+
+An example `docker-compose.yml` file is given below. Far clarity, you might want to call this file `station0.yml`
+```
+version: "3.3"
+
+services:
+  file_download_service_0:
+    image: personalhealthtrain/file-download-service-iris:0
+    hostname: file_download_service_0
+    networks:
+    - iris0
+  
+  station0:
+    image: personalhealthtrain/station:0.0.4
+    volumes:
+    - /run/docker.sock:/var/run/docker.sock
+    environment:
+      STATION_NAME: station0
+      STATION_ID: 0
+      STATION_DOCKER_NETWORK: file-download-iris_iris0
+      STATION_REGISTRY_URI: http://134.2.9.126:5000
+      STATION_REGISTRY_NAMESPACE: namespace
+      STATION_REGISTRY_USERNAME: admin
+      STATION_REGISTRY_PASSWORD: adminpass
+      STATION_RESOURCES_PHT_FILE_DOWNLOAD_SERVICE: http://file_download_service_0:5000
+networks:
+  iris0:
+```
+There are two services that this Compose file wil start:
+
+- **file_download_service_0**: This is a resource that the train might want to communicate with.
+- **station0**: This is the actual station application.
+
+Note that you have to mount the local Docker TCP socket for station0, as the station will use
+a Docker client for running trains. Also note that your Docker socket might be located at `/var/run/docker.sock`
+instead of `/run/docker.sock`.
+
+The station service requires a bunch of environment variables to be set in order to run:
+
+Environment Variable         | Description                          | Example Value
+-----------------------------|--------------------------------------|----------------
+`STATION_NAME`               | The clear-text name of the station   | station0
+`STATION_ID`                 | ID of the station. Should be unique. If not, Portus will not be able to distinguish the stations | 0
+`STATION_DOCKER_NETWORK`     | The name of the Docker Network the Station should submit trains to | file-download-iris_iris0 
+`STATION_REGISTRY_URI`       | The registry URI that station will use to contact the station | http://134.2.9.126:5000
+`STATION_REGISTRY_NAMESPACE` | The Portus the station is attached to. Currently, the station only supports one namespace | namespace
+`STATION_REGISTRY_USERNAME`  | The username to use Portus (currently, this needs to be an admin user) | admin
+`STATION_REGISTRY_PASSWORD`  | Password for the user | adminpass
+
+#### Resources
+
+One of the tasks of the station is to communicate resources to the train, that is can use for executing its algorithm.
+Such resources are provided to the station via the `STATION_RESOURCES` prefix.
+
+In the above example, the environment variable `STATION_RESOURCES_PHT_FILE_DOWNLOAD_SERVICE`
+will be passed to the train with the name `PHT_FILE_DOWNLOAD_SERVICE` (the `STATION_RESOURCES` prefix is trimmed).
+
+### The station (From Source, not recommended, as you need Gradle and stuff.)
+
+This [git repository](https://github.com/PersonalHealthTrain/station) contains the source code for a simple Station, a docker client configured to check the registry for new Trains/Docker Images, pulling & executing them.
 
 #### Prerequisites
 
